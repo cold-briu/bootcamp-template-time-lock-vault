@@ -1,0 +1,6 @@
+[submodule "time-lock-vault/lib/forge-std"]
+	path = time-lock-vault/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "time-lock-vault/lib/openzeppelin-contracts"]
+	path = time-lock-vault/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
