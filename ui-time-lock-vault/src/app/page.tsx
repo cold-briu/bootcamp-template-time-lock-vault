@@ -115,6 +115,7 @@ export default function Home() {
                         <VaultList
                             account={account}
                             publicClient={publicClient.current}
+                            walletClient={walletClient.current}
                         />
                     )}
                 </div>

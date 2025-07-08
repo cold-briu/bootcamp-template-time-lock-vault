@@ -1,39 +1,46 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import abiJson from '../../abi/TimeLockVaultFactory.json';
 import type { Abi } from 'viem';
 
 const abi = abiJson.abi as Abi;
 
 interface Vault {
-    id: string;
+    id: number;
     owner: string;
     amount: bigint;
     unlockTime: bigint;
     isWithdrawn: boolean;
 }
 
-export default function VaultList({ account, publicClient }: {
+export default function VaultList({ account, publicClient, walletClient }: {
     account: string | undefined,
-    publicClient: any
+    publicClient: any,
+    walletClient: any
 }) {
     const [vaults, setVaults] = useState<Vault[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string>('');
+    const [withdrawingVaultId, setWithdrawingVaultId] = useState<number | null>(null);
 
     async function fetchVaults() {
         if (!publicClient) return;
-        setVaults([]); // Clear previous vaults
+
+        // Prevent multiple simultaneous fetches
+        if (isLoading) return;
+
         setIsLoading(true);
         setError('');
+        setVaults([]); // Clear previous vaults
 
         try {
             let index = 0;
+            const newVaults: Vault[] = [];
 
             // Keep fetching vaults until we hit an empty one
             while (true) {
                 const vault = await publicClient.readContract({
-                    address: '0xa8C5B6f5f330E34e33F3d22B3Fe834e2bEFEa095', // Your contract address
+                    address: '0xa8C5B6f5f330E34e33F3d22B3Fe834e2bEFEa095', // Replace with your deployed contract address
                     abi: abi,
                     functionName: 'vaults',
                     args: [BigInt(index)]
@@ -45,24 +52,52 @@ export default function VaultList({ account, publicClient }: {
                     break; // Stop fetching, we've reached the end
                 }
 
-                // Add valid vault to our list progressively
-                setVaults(prev => [...prev, {
-                    id: `${index}-${vault[0]}`, // Use combination of index and owner for unique ID
+                // Add vault to our local array
+                newVaults.push({
+                    id: index, // Use index as vault ID
                     owner: vault[0], // owner is at index 0
                     amount: vault[2], // amount is at index 2
                     unlockTime: vault[3], // unlockTime is at index 3
                     isWithdrawn: vault[4] || false // isWithdrawn is at index 4
-                }]);
+                });
 
                 index++;
-                // Wait a tick to allow UI to update
-                await new Promise(res => setTimeout(res, 0));
             }
+
+            // Set all vaults at once to avoid multiple re-renders
+            setVaults(newVaults);
         } catch (err) {
             console.error('Error fetching vaults:', err);
             setError('Failed to fetch vaults. Please try again.');
         } finally {
             setIsLoading(false);
+        }
+    }
+
+    async function withdrawVault(vaultId: number) {
+        if (!walletClient || !account) return;
+
+        setWithdrawingVaultId(vaultId);
+        try {
+            const { request } = await publicClient.simulateContract({
+                address: '0xa8C5B6f5f330E34e33F3d22B3Fe834e2bEFEa095', // Your contract address
+                abi: abi,
+                functionName: 'withdraw',
+                args: [BigInt(vaultId)],
+                account: account,
+            });
+
+            const hash = await walletClient.writeContract(request);
+            await publicClient.waitForTransactionReceipt({ hash });
+
+            // Refresh vault list to show updated withdrawal status
+            await fetchVaults();
+            alert('Withdrawal successful!');
+        } catch (error) {
+            console.error('Withdrawal error:', error);
+            alert('Withdrawal failed. Please try again.');
+        } finally {
+            setWithdrawingVaultId(null);
         }
     }
 
@@ -134,8 +169,8 @@ export default function VaultList({ account, publicClient }: {
                 {/* Vaults List */}
                 {vaults.length > 0 && (
                     <div className="space-y-3">
-                        {vaults.map((vault, index) => (
-                            <div key={vault.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        {vaults.map((vault) => (
+                            <div key={`${vault.id}-${vault.owner}`} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <h3 className="font-medium text-gray-900">Vault #{vault.id}</h3>
                                     <span className={`px-2 py-1 text-xs rounded-full ${vault.isWithdrawn
@@ -162,6 +197,31 @@ export default function VaultList({ account, publicClient }: {
                                         <span className="font-medium">Unlocks:</span> {formatUnlockTime(vault.unlockTime)}
                                     </p>
                                 </div>
+
+                                {/* Withdraw Button */}
+                                {vault.owner.toLowerCase() === account.toLowerCase() &&
+                                    !vault.isWithdrawn &&
+                                    isVaultUnlocked(vault.unlockTime) && (
+                                        <button
+                                            onClick={() => withdrawVault(vault.id)}
+                                            disabled={withdrawingVaultId === vault.id}
+                                            className="mt-3 w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                                        >
+                                            {withdrawingVaultId === vault.id ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                    <span>Withdrawing...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                                    </svg>
+                                                    <span>Withdraw</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                             </div>
                         ))}
                         {isLoading && (

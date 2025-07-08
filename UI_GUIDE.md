@@ -566,9 +566,10 @@ interface Vault {
   isWithdrawn: boolean;
 }
 
-export default function VaultList({ account, publicClient }: {
+export default function VaultList({ account, publicClient, walletClient }: {
   account: string | undefined,
-  publicClient: any
+  publicClient: any,
+  walletClient: any
 }) {
   // Component will be built in sub-steps below
   return <div>Loading...</div>
@@ -590,12 +591,17 @@ const [error, setError] = useState<string>('');
 // Add this function inside the component
 async function fetchVaults() {
   if (!publicClient) return;
-  setVaults([]); // Clear previous vaults
+  
+  // Prevent multiple simultaneous fetches
+  if (isLoading) return;
+  
   setIsLoading(true);
   setError('');
+  setVaults([]); // Clear previous vaults
   
   try {
     let index = 0;
+    const newVaults: Vault[] = [];
     
     // Keep fetching vaults until we hit an empty one
     while (true) {
@@ -612,19 +618,20 @@ async function fetchVaults() {
         break; // Stop fetching, we've reached the end
       }
       
-      // Add valid vault to our list progressively
-      setVaults(prev => [...prev, {
-        id: `${index}-${vault[0]}`, // Use combination of index and owner for unique ID
+      // Add vault to our local array
+      newVaults.push({
+        id: index, // Use index as vault ID
         owner: vault[0], // owner is at index 0
         amount: vault[2], // amount is at index 2
         unlockTime: vault[3], // unlockTime is at index 3
         isWithdrawn: vault[4] || false // isWithdrawn is at index 4
-      }]);
+      });
       
       index++;
-      // Wait a tick to allow UI to update
-      await new Promise(res => setTimeout(res, 0));
     }
+    
+    // Set all vaults at once to avoid multiple re-renders
+    setVaults(newVaults);
   } catch (err) {
     console.error('Error fetching vaults:', err);
     setError('Failed to fetch vaults. Please try again.');
@@ -743,7 +750,7 @@ return (
 {vaults.length > 0 && (
   <div className="space-y-3">
     {vaults.map((vault) => (
-      <div key={vault.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+      <div key={`${vault.id}-${vault.owner}`} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-medium text-gray-900">Vault #{vault.id}</h3>
           <span className={`px-2 py-1 text-xs rounded-full ${
@@ -794,7 +801,11 @@ In your main page (e.g., `src/app/page.tsx`), import and add the new component:
 ```tsx
 import VaultList from "./VaultList";
 // ... inside your Home component's return, after VaultCreation ...
-<VaultList account={account} publicClient={publicClient.current} />
+<VaultList 
+  account={account} 
+  publicClient={publicClient.current} 
+  walletClient={walletClient.current}
+/>
 ```
 
 ### 10.3 Update VaultCreation to Refresh the List
