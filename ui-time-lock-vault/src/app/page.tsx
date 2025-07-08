@@ -2,6 +2,8 @@
 import { useState, useRef, useEffect } from "react";
 import abiJson from "../../abi/TimeLockVaultFactory.json";
 import type { Abi } from "viem";
+import VaultCreation from "./VaultCreation";
+import VaultList from "./VaultList";
 
 const abi = abiJson.abi as Abi;
 
@@ -96,6 +98,24 @@ export default function Home() {
                             <p className="text-sm text-blue-800 font-medium">Account Balance</p>
                             <p className="text-lg text-blue-900 font-bold">{balance} CELO</p>
                         </div>
+                    )}
+
+                    {/* Vault Creation Component */}
+                    {account && (
+                        <VaultCreation
+                            account={account}
+                            walletClient={walletClient.current}
+                            publicClient={publicClient.current}
+                            balance={balance}
+                        />
+                    )}
+
+                    {/* Vault List Component */}
+                    {account && (
+                        <VaultList
+                            account={account}
+                            publicClient={publicClient.current}
+                        />
                     )}
                 </div>
             </div>
