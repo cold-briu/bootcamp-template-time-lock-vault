@@ -404,7 +404,7 @@ export default function VaultCreation({ account, walletClient, publicClient, bal
     try {
       const unlockTime = Math.floor(Date.now() / 1000) + totalSeconds;
       const { request } = await publicClient.simulateContract({
-        address: '0x...', // Replace with your deployed contract address
+        address: '0xa8C5B6f5f330E34e33F3d22B3Fe834e2bEFEa095', // Replace with your deployed contract address
         abi: abi,
         functionName: 'createVaultCelo',
         args: [BigInt(unlockTime)],
