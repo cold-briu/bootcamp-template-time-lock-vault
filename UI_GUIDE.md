@@ -807,7 +807,104 @@ And in your main page, pass the refresh function:
 
 ---
 
-## 11. Build and Run
+## 11. Withdraw Vault
+
+Add withdraw functionality to the VaultList component to complete the time-lock vault lifecycle.
+
+### 11.1 Add Withdraw State and Function
+
+In `src/app/VaultList.tsx`, add withdraw state and function:
+
+```tsx
+// Add these state variables
+const [withdrawingVaultId, setWithdrawingVaultId] = useState<number | null>(null);
+
+// Add withdraw function
+async function withdrawVault(vaultId: number) {
+  if (!walletClient || !account) return;
+  
+  setWithdrawingVaultId(vaultId);
+  try {
+    const { request } = await publicClient.simulateContract({
+      address: '0xa8C5B6f5f330E34e33F3d22B3Fe834e2bEFEa095', // Your contract address
+      abi: abi,
+      functionName: 'withdraw',
+      args: [BigInt(vaultId)],
+      account: account,
+    });
+    
+    const hash = await walletClient.writeContract(request);
+    await publicClient.waitForTransactionReceipt({ hash });
+    
+    // Refresh vault list to show updated withdrawal status
+    await fetchVaults();
+    alert('Withdrawal successful!');
+  } catch (error) {
+    console.error('Withdrawal error:', error);
+    alert('Withdrawal failed. Please try again.');
+  } finally {
+    setWithdrawingVaultId(null);
+  }
+}
+```
+
+### 11.2 Add Withdraw Button Logic
+
+Add withdraw button to each vault card that meets the criteria:
+
+```tsx
+// Add this inside the vault card, after the vault details
+{/* Withdraw Button */}
+{vault.owner.toLowerCase() === account.toLowerCase() && 
+ !vault.isWithdrawn && 
+ isVaultUnlocked(vault.unlockTime) && (
+  <button
+    onClick={() => withdrawVault(vault.id)}
+    disabled={withdrawingVaultId === vault.id}
+    className="mt-3 w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+  >
+    {withdrawingVaultId === vault.id ? (
+      <>
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+        <span>Withdrawing...</span>
+      </>
+    ) : (
+      <>
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+        </svg>
+        <span>Withdraw</span>
+      </>
+    )}
+  </button>
+)}
+```
+
+### 11.3 Update Main Page to Pass Wallet Client
+
+In your main page, pass the wallet client to VaultList:
+
+```tsx
+<VaultList 
+  account={account} 
+  publicClient={publicClient.current} 
+  walletClient={walletClient.current}
+/>
+```
+
+### 11.4 Test the Withdraw Flow
+
+1. Create a vault with a short duration (e.g., 30 seconds)
+2. Wait for the unlock time to pass
+3. Click the withdraw button
+4. Confirm the transaction in your wallet
+5. Verify the vault status updates to "Withdrawn"
+
+This completes the basic time-lock vault functionality: create, list, and withdraw.
+
+---
+
+## 12. Build and Run
 
 ### Update TypeScript Configuration
 
