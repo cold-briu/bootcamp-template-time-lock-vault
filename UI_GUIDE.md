@@ -614,7 +614,7 @@ async function fetchVaults() {
       
       // Add valid vault to our list progressively
       setVaults(prev => [...prev, {
-        id: index,
+        id: `${index}-${vault[0]}`, // Use combination of index and owner for unique ID
         owner: vault[0], // owner is at index 0
         amount: vault[2], // amount is at index 2
         unlockTime: vault[3], // unlockTime is at index 3

@@ -6,7 +6,7 @@ import type { Abi } from 'viem';
 const abi = abiJson.abi as Abi;
 
 interface Vault {
-    id: number;
+    id: string;
     owner: string;
     amount: bigint;
     unlockTime: bigint;
@@ -47,7 +47,7 @@ export default function VaultList({ account, publicClient }: {
 
                 // Add valid vault to our list progressively
                 setVaults(prev => [...prev, {
-                    id: index,
+                    id: `${index}-${vault[0]}`, // Use combination of index and owner for unique ID
                     owner: vault[0], // owner is at index 0
                     amount: vault[2], // amount is at index 2
                     unlockTime: vault[3], // unlockTime is at index 3
@@ -134,15 +134,15 @@ export default function VaultList({ account, publicClient }: {
                 {/* Vaults List */}
                 {vaults.length > 0 && (
                     <div className="space-y-3">
-                        {vaults.map((vault) => (
+                        {vaults.map((vault, index) => (
                             <div key={vault.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <h3 className="font-medium text-gray-900">Vault #{vault.id}</h3>
                                     <span className={`px-2 py-1 text-xs rounded-full ${vault.isWithdrawn
-                                            ? 'bg-gray-100 text-gray-600'
-                                            : isVaultUnlocked(vault.unlockTime)
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-yellow-100 text-yellow-800'
+                                        ? 'bg-gray-100 text-gray-600'
+                                        : isVaultUnlocked(vault.unlockTime)
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-yellow-100 text-yellow-800'
                                         }`}>
                                         {vault.isWithdrawn ? 'Withdrawn' : isVaultUnlocked(vault.unlockTime) ? 'Unlocked' : 'Locked'}
                                     </span>
