@@ -12,9 +12,10 @@ A step-by-step guide to building, testing, and deploying a time-lock vault smart
 6. [Deployment](#deployment)
 7. [Contract Interaction Examples](#contract-interaction-examples)
 8. [CELO Vault Cast Interaction Examples](#celo-vault-cast-interaction-examples)
-9. [Examples](#examples)
-10. [Additional Resources](#additional-resources)
-11. [Contributing & License](#contributing--license)
+9. [UI Setup](#ui-setup)
+10. [Examples](#examples)
+11. [Additional Resources](#additional-resources)
+12. [Contributing & License](#contributing--license)
 
 ---
 
@@ -339,6 +340,18 @@ cast send $FACTORY_ADDRESS "withdraw(uint256)" 0 --rpc-url $RPC_URL --private-ke
 ```
 
 ---
+
+## 9. UI Setup
+
+#### Context
+Build a minimal web3 UI for your time-lock vault contract. For detailed instructions, see the [UI Guide](UI_GUIDE.md).
+
+- Next.js + TypeScript + Tailwind CSS setup
+- Viem integration for Celo Alfajores
+- Wallet connection and contract interaction
+- Complete UI implementation with SSR prevention
+- Build and deployment instructions
+- Troubleshooting common issues
 
 ## 10. Additional Resources
 
