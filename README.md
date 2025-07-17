@@ -180,7 +180,7 @@ Deploy your contract to the Celo Alfajores testnet using Foundry.
 forge script script/DeployFactory.s.sol:DeployFactoryScript \
   --rpc-url $RPC_URL \
   --broadcast \
-  --private-key $PRIVATE_KEY
+  --aacount my-wallet-time-lock
 ```
 
 #### Verify Deployment
